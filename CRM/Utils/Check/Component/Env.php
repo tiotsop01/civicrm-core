@@ -453,16 +453,16 @@ class CRM_Utils_Check_Component_Env extends CRM_Utils_Check_Component {
     if (!empty($notWritable)) {
       $messages[] = new CRM_Utils_Check_Message(
         __FUNCTION__,
-        ts('The %1 is not writable.  Please check your file permissions.', array(
+        ts('Extensions Downloads: Many extensions are available for CiviCRM. If you would like to download extensions in the web UI, please make the folder %1 writable.', array(
           1 => implode(', ', $notWritable),
           'count' => count($notWritable),
-          'plural' => 'The following directories are not writable: %1.  Please check your file permissions.',
+          'plural' => 'Please make the following directories writable: %1. Writing to Settings file has been disaabled by admin.',
         )),
         ts('Directory not writable', array(
           'count' => count($notWritable),
           'plural' => 'Directories not writable',
         )),
-        \Psr\Log\LogLevel::ERROR,
+        \Psr\Log\LogLevel::INFO,
         'fa-ban'
       );
     }
@@ -483,10 +483,10 @@ class CRM_Utils_Check_Component_Env extends CRM_Utils_Check_Component {
     catch (Exception $e) {
       $messages[] = new CRM_Utils_Check_Message(
         'checkVersionError',
-        ts('Directory %1 is not writable.  Please change your file permissions.',
+        ts('Extensions Downloads: Many extensions are available for CiviCRM. If you would like to download extensions in the web UI, please make the folder %1 writable.',
           array(1 => dirname($vc->cacheFile))),
         ts('Directory not writable'),
-        \Psr\Log\LogLevel::ERROR,
+        \Psr\Log\LogLevel::INFO,
         'fa-times-circle-o'
       );
       return $messages;
