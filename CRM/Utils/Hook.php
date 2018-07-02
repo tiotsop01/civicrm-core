@@ -2009,7 +2009,7 @@ abstract class CRM_Utils_Hook {
     // are expected to be called externally.
     // It's really really unlikely anyone uses this - but let's add deprecations for a couple
     // of releases first.
-    Civi::log()->warning('Deprecated function CRM_Utils_Hook::alterMail, use CRM_Utils_Hook::alterMailer', array('civi.tag' => 'deprecated'));
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Utils_Hook::alterMailer');
     return CRM_Utils_Hook::alterMailer($mailer, $driver, $params);
   }
 
@@ -2415,6 +2415,38 @@ abstract class CRM_Utils_Hook {
     return self::singleton()->invoke(array('params', 'formName'), $params, $formName,
       self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
       'civicrm_alterEntityRefParams'
+    );
+  }
+
+  /**
+   * This hook is called before a scheduled job is executed
+   *
+   * @param CRM_Core_DAO_Job $job
+   *   The job to be executed
+   * @param array $params
+   *   The arguments to be given to the job
+   */
+  public static function preJob($job, $params) {
+    return self::singleton()->invoke(array('job', 'params'), $job, $params,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_preJob'
+    );
+  }
+
+  /**
+   * This hook is called after a scheduled job is executed
+   *
+   * @param CRM_Core_DAO_Job $job
+   *   The job that was executed
+   * @param array $params
+   *   The arguments given to the job
+   * @param array $result
+   *   The result of the API call, or the thrown exception if any
+   */
+  public static function postJob($job, $params, $result) {
+    return self::singleton()->invoke(array('job', 'params', 'result'), $job, $params, $result,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_postJob'
     );
   }
 

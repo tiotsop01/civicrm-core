@@ -122,6 +122,113 @@
     };
   });
 
+  crmCaseType.directive('crmEditableTabTitle', function($timeout) {
+    return {
+      restrict: 'AE',
+      link: function(scope, element, attrs) {
+        element.addClass('crm-editable crm-editable-enabled');
+        var titleLabel = $(element).find('span');
+        var penIcon = $('<i class="crm-i fa-pencil crm-editable-placeholder"></i>').prependTo(element);
+        var saveButton = $('<button type="button"><i class="crm-i fa-check"></i></button>').appendTo(element);
+        var cancelButton = $('<button type="cancel"><i class="crm-i fa-times"></i></button>').appendTo(element);
+        $('button', element).wrapAll('<div class="crm-editable-form" style="display:none" />');
+        var buttons = $('.crm-editable-form', element);
+        titleLabel.on('click', startEditMode);
+        penIcon.on('click', startEditMode);
+
+        function detectEscapeKeyPress (event) {
+          var isEscape = false;
+
+          if ("key" in event) {
+              isEscape = (event.key == "Escape" || event.key == "Esc");
+          } else {
+              isEscape = (event.keyCode == 27);
+          }
+
+          return isEscape;
+        }
+
+        function detectEnterKeyPress (event) {
+          var isEnter = false;
+
+          if ("key" in event) {
+            isEnter = (event.key == "Enter");
+          } else {
+            isEnter = (event.keyCode == 13);
+          }
+
+          return isEnter;
+        }
+
+        function startEditMode () {
+          if (titleLabel.is(":focus")) {
+            return;
+          }
+
+          penIcon.hide();
+          buttons.show();
+
+          saveButton.click(function () {
+            updateTextValue();
+            stopEditMode();
+          });
+
+          cancelButton.click(function () {
+            revertTextValue();
+            stopEditMode();
+          });
+
+          $(element).addClass('crm-editable-editing');
+
+          titleLabel
+            .attr("contenteditable", "true")
+            .focus()
+            .focusout(function (event) {
+              $timeout(function () {
+                revertTextValue();
+                stopEditMode();
+              }, 500);
+            })
+            .keydown(function(event) {
+              event.stopImmediatePropagation();
+
+              if(detectEscapeKeyPress(event)) {
+                revertTextValue();
+                stopEditMode();
+              } else if(detectEnterKeyPress(event)) {
+                event.preventDefault();
+                updateTextValue();
+                stopEditMode();
+              }
+            });
+        }
+
+        function stopEditMode () {
+          titleLabel.removeAttr("contenteditable").off("focusout");
+          titleLabel.off("keydown");
+          saveButton.off("click");
+          cancelButton.off("click");
+          $(element).removeClass('crm-editable-editing');
+
+          penIcon.show();
+          buttons.hide();
+        }
+
+        function revertTextValue () {
+          titleLabel.text(scope.activitySet.label);
+        }
+
+        function updateTextValue () {
+          var updatedTitle = titleLabel.text();
+
+          scope.$evalAsync(function () {
+            scope.activitySet.label = updatedTitle;
+          });
+        }
+      }
+    };
+  });
+
   crmCaseType.controller('CaseTypeCtrl', function($scope, crmApi, apiCalls) {
     // CRM_Case_XMLProcessor::REL_TYPE_CNAME
     var REL_TYPE_CNAME = CRM.crmCaseType.REL_TYPE_CNAME,
@@ -154,6 +261,8 @@
     $scope.caseType.definition.caseRoles = $scope.caseType.definition.caseRoles || [];
     $scope.caseType.definition.statuses = $scope.caseType.definition.statuses || [];
 
+    $scope.caseType.definition.timelineActivityTypes = $scope.caseType.definition.timelineActivityTypes || [];
+
     $scope.selectedStatuses = {};
     _.each(apiCalls.caseStatuses.values, function (status) {
       $scope.selectedStatuses[status.name] = !$scope.caseType.definition.statuses.length || $scope.caseType.definition.statuses.indexOf(status.name) > -1;
@@ -181,14 +290,27 @@
     }
 
     function addActivityToSet(activitySet, activityTypeName) {
-      activitySet.activityTypes.push({
-        name: activityTypeName,
-        label: $scope.activityTypes[activityTypeName].label,
-        status: 'Scheduled',
-        reference_activity: 'Open Case',
-        reference_offset: '1',
-        reference_select: 'newest'
-      });
+      var activity = {
+          name: activityTypeName,
+          label: $scope.activityTypes[activityTypeName].label,
+          status: 'Scheduled',
+          reference_activity: 'Open Case',
+          reference_offset: '1',
+          reference_select: 'newest'
+      };
+      activitySet.activityTypes.push(activity);
+      if(typeof activitySet.timeline !== "undefined" && activitySet.timeline == "1") {
+        $scope.caseType.definition.timelineActivityTypes.push(activity);
+      }
+    }
+
+    function resetTimelineActivityTypes() {
+        $scope.caseType.definition.timelineActivityTypes = [];
+        angular.forEach($scope.caseType.definition.activitySets, function(activitySet) {
+            angular.forEach(activitySet.activityTypes, function(activityType) {
+                $scope.caseType.definition.timelineActivityTypes.push(activityType);
+            });
+        });
     }
 
     function createActivity(name, callback) {
@@ -256,6 +378,7 @@
       var idx = _.indexOf(array, item);
       if (idx != -1) {
         array.splice(idx, 1);
+        resetTimelineActivityTypes();
       }
     };
 
@@ -355,6 +478,7 @@
     if (!$scope.isForkable()) {
       CRM.alert(ts('The CiviCase XML file for this case-type prohibits editing the definition.'));
     }
+
   });
 
   crmCaseType.controller('CaseTypeListCtrl', function($scope, crmApi, caseTypes) {

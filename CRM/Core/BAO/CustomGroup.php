@@ -128,31 +128,32 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
       $fields[] = 'is_public';
     }
     foreach ($fields as $field) {
-      if (isset($params[$field]) || $field == 'is_multiple') {
-        $group->$field = CRM_Utils_Array::value($field, $params, FALSE);
+      if (isset($params[$field])) {
+        $group->$field = $params[$field];
       }
     }
     $group->max_multiple = isset($params['is_multiple']) ? (isset($params['max_multiple']) &&
       $params['max_multiple'] >= '0'
     ) ? $params['max_multiple'] : 'null' : 'null';
 
-    $tableName = $oldTableName = NULL;
+    $tableName = $tableNameNeedingIndexUpdate = NULL;
     if (isset($params['id'])) {
       $group->id = $params['id'];
-      //check whether custom group was changed from single-valued to multiple-valued
-      $isMultiple = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup',
-        $params['id'],
-        'is_multiple'
-      );
 
-      if ((!empty($params['is_multiple']) || $isMultiple) &&
-        ($params['is_multiple'] != $isMultiple)
-      ) {
-        $oldTableName = CRM_Core_DAO::getFieldValue(
-          'CRM_Core_DAO_CustomGroup',
+      if (isset($params['is_multiple'])) {
+        //check whether custom group was changed from single-valued to multiple-valued
+        $isMultiple = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup',
           $params['id'],
-          'table_name'
+          'is_multiple'
         );
+
+        if ($params['is_multiple'] != $isMultiple) {
+          $tableNameNeedingIndexUpdate = CRM_Core_DAO::getFieldValue(
+            'CRM_Core_DAO_CustomGroup',
+            $params['id'],
+            'table_name'
+          );
+        }
       }
     }
     else {
@@ -202,8 +203,8 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
       // now create the table associated with this group
       self::createTable($group);
     }
-    elseif ($oldTableName) {
-      CRM_Core_BAO_SchemaHandler::changeUniqueToIndex($oldTableName, CRM_Utils_Array::value('is_multiple', $params));
+    elseif ($tableNameNeedingIndexUpdate) {
+      CRM_Core_BAO_SchemaHandler::changeUniqueToIndex($tableNameNeedingIndexUpdate, CRM_Utils_Array::value('is_multiple', $params));
     }
 
     if (CRM_Utils_Array::value('overrideFKConstraint', $params) == 1) {
@@ -1386,7 +1387,6 @@ ORDER BY civicrm_custom_group.weight,
 
         switch ($field['html_type']) {
           case 'Multi-Select':
-          case 'AdvMulti-Select':
           case 'CheckBox':
             $defaults[$elementName] = array();
             $customOption = CRM_Core_BAO_CustomOption::getCustomOption($field['id'], $inactiveNeeded);
@@ -1506,7 +1506,6 @@ ORDER BY civicrm_custom_group.weight,
         //added Multi-Select option in the below if-statement
         if ($field['html_type'] == 'CheckBox' ||
           $field['html_type'] == 'Radio' ||
-          $field['html_type'] == 'AdvMulti-Select' ||
           $field['html_type'] == 'Multi-Select'
         ) {
           $groupTree[$groupID]['fields'][$fieldId]['customValue']['data'] = 'NULL';
@@ -1542,10 +1541,6 @@ ORDER BY civicrm_custom_group.weight,
             }
             break;
 
-          //added for Advanced Multi-Select
-
-          case 'AdvMulti-Select':
-            //added for Multi-Select
           case 'Multi-Select':
             if (!empty($v)) {
               $groupTree[$groupID]['fields'][$fieldId]['customValue']['data'] = CRM_Core_DAO::VALUE_SEPARATOR
@@ -1663,7 +1658,6 @@ ORDER BY civicrm_custom_group.weight,
     $htmlType = array(
       'CheckBox',
       'Multi-Select',
-      'AdvMulti-Select',
       'Select',
       'Radio',
     );
@@ -1684,7 +1678,6 @@ ORDER BY civicrm_custom_group.weight,
             $valid = CRM_Core_BAO_CustomValue::typecheck($field['data_type'], $value);
           }
           if ($field['html_type'] == 'CheckBox' ||
-            $field['html_type'] == 'AdvMulti-Select' ||
             $field['html_type'] == 'Multi-Select'
           ) {
             $value = str_replace("|", ",", $value);

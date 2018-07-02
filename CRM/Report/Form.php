@@ -489,6 +489,14 @@ class CRM_Report_Form extends CRM_Core_Form {
   protected $sqlArray;
 
   /**
+   * Tables created for the report that need removal afterwards.
+   *
+   * ['civicrm_temp_report_x' => ['temporary' => TRUE, 'name' => 'civicrm_temp_report_x']
+   * @var array
+   */
+  protected $temporaryTables = [];
+
+  /**
    * Can this report use the sql mode ONLY_FULL_GROUP_BY.
    * @var bool
    */
@@ -1112,6 +1120,15 @@ class CRM_Report_Form extends CRM_Core_Form {
    */
   public function getDefaultValues() {
     return $this->_defaults;
+  }
+
+  /**
+   * Remove any temporary tables.
+   */
+  public function cleanUpTemporaryTables() {
+    foreach ($this->temporaryTables as $temporaryTable) {
+      CRM_Core_DAO::executeQuery('DROP ' . ($temporaryTable['temporary'] ? 'TEMPORARY' : '') . ' TABLE IF EXISTS ' . $temporaryTable['name']);
+    }
   }
 
   /**
@@ -2433,7 +2450,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
    * @return mixed
    */
   protected function alterBoolean($value) {
-    $options = array(0 => ts('No'), 1 => ts('Yes'));
+    $options = array(0 => '', 1 => ts('Yes'));
     if (isset($options[$value])) {
       return $options[$value];
     }
@@ -3672,7 +3689,7 @@ WHERE cg.extends IN ('" . implode("','", $this->_customGroupExtends) . "') AND
         WHERE smartgroup_contact.group_id IN ({$smartGroups}) ";
     }
 
-    $this->groupTempTable = 'civicrm_report_temp_group_' . date('Ymd_') . uniqid();
+    $this->groupTempTable = CRM_Utils_SQL_TempTable::build()->setCategory('rptgrp')->setId(date('Ymd_') . uniqid())->getName();
     $this->executeReportQuery("
       CREATE TEMPORARY TABLE $this->groupTempTable $this->_databaseAttributes
       $query
@@ -4526,7 +4543,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
    * (left here in case extensions use it).
    */
   public function addAddressFromClause() {
-    Civi::log()->warning('Deprecated function addAddressFromClause. Use joinAddressFromContact.', array('civi.tag' => 'deprecated'));
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Report_Form::joinAddressFromContact');
     // include address field if address column is to be included
     if ((isset($this->_addressField) &&
         $this->_addressField
@@ -4548,8 +4565,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
    *  (left here in case extensions use it).
    */
   public function addPhoneFromClause() {
-
-    Civi::log()->warning('Deprecated function addPhoneFromClause. Use joinPhoneFromContact.', array('civi.tag' => 'deprecated'));
+    CRM_Core_Error::deprecatedFunctionWarning('CRM_Report_Form::joinPhoneFromContact');
     // include address field if address column is to be included
     if ($this->isTableSelected('civicrm_phone')) {
       $this->_from .= "
@@ -5299,6 +5315,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         'is_order_bys' => TRUE,
         'is_group_bys' => TRUE,
         'is_fields' => TRUE,
+        'is_filters' => TRUE,
       ),
       $options['prefix'] . 'external_identifier' => array(
         'name' => 'external_identifier',

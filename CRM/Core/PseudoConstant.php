@@ -192,6 +192,7 @@ class CRM_Core_PseudoConstant {
    * - onlyActive boolean return only the action option values
    * - fresh      boolean ignore cache entries and go back to DB
    * @param string $context : Context string
+   * @see CRM_Core_DAO::buildOptionsContext
    *
    * @return array|bool
    *   array on success, FALSE on error.
@@ -535,7 +536,7 @@ class CRM_Core_PseudoConstant {
     $key = 'id',
     $force = NULL
   ) {
-    $cacheKey = "CRM_PC_{$name}_{$all}_{$key}_{$retrieve}_{$filter}_{$condition}_{$orderby}";
+    $cacheKey = CRM_Core_BAO_Cache::cleanKey("CRM_PC_{$name}_{$all}_{$key}_{$retrieve}_{$filter}_{$condition}_{$orderby}");
     $cache = CRM_Utils_Cache::singleton();
     $var = $cache->get($cacheKey);
     if ($var && empty($force)) {
@@ -578,7 +579,6 @@ class CRM_Core_PseudoConstant {
   /**
    * Flush given pseudoconstant so it can be reread from db.
    * nex time it's requested.
-   *
    *
    * @param bool|string $name pseudoconstant to be flushed
    */

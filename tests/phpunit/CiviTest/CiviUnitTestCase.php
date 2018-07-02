@@ -405,7 +405,9 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
   protected function tearDown() {
     error_reporting(E_ALL & ~E_NOTICE);
     CRM_Utils_Hook::singleton()->reset();
-    $this->hookClass->reset();
+    if ($this->hookClass) {
+      $this->hookClass->reset();
+    }
     $session = CRM_Core_Session::singleton();
     $session->set('userID', NULL);
 
@@ -3004,15 +3006,20 @@ AND    ( TABLE_NAME LIKE 'civicrm_value_%' )
    *
    * @param string $name
    * @param int $contributionPageID
+   * @param string $module
    */
-  protected function addProfile($name, $contributionPageID) {
-    $this->callAPISuccess('UFJoin', 'create', array(
+  protected function addProfile($name, $contributionPageID, $module = 'CiviContribute') {
+    $params = [
       'uf_group_id' => $name,
-      'module' => 'CiviContribute',
+      'module' => $module,
       'entity_table' => 'civicrm_contribution_page',
       'entity_id' => $contributionPageID,
       'weight' => 1,
-    ));
+    ];
+    if ($module !== 'CiviContribute') {
+      $params['module_data'] = [$module => []];
+    }
+    $this->callAPISuccess('UFJoin', 'create', $params);
   }
 
   /**

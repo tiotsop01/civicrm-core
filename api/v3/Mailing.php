@@ -251,7 +251,7 @@ function civicrm_api3_mailing_delete($params) {
  * @return array
  */
 function civicrm_api3_mailing_get($params) {
-  $result = _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  $result = _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params, TRUE, 'Mailing');
   return _civicrm_api3_mailing_get_formatResult($result);
 }
 
@@ -584,7 +584,7 @@ function civicrm_api3_mailing_preview($params) {
   return civicrm_api3_create_success(array(
     'id' => $params['id'],
     'contact_id' => $contactID,
-    'subject' => $mime->_headers['Subject'],
+    'subject' => $mime->headers()['Subject'],
     'body_html' => $mime->getHTMLBody(),
     'body_text' => $mime->getTXTBody(),
   ));
