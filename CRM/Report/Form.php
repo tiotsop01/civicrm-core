@@ -1069,6 +1069,15 @@ class CRM_Report_Form extends CRM_Core_Form {
   }
 
   /**
+   * Getter for $_params.
+   *
+   * @return void|array $params
+   */
+  public function getParams() {
+    return $this->_params;
+  }
+
+  /**
    * Setter for $_id.
    *
    * @param int $instanceID
@@ -5374,6 +5383,22 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         'title' => $options['prefix_label'] . ts('Nick Name'),
         'is_fields' => TRUE,
       ),
+      $options['prefix'] . 'prefix_id' => array(
+        'name' => 'prefix_id',
+        'title' => $options['prefix_label'] . ts('Prefix'),
+        'options' => CRM_Contact_BAO_Contact::buildOptions('prefix_id'),
+        'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+        'is_fields' => TRUE,
+        'is_filters' => TRUE,
+      ),
+      $options['prefix'] . 'suffix_id' => array(
+        'name' => 'suffix_id',
+        'title' => $options['prefix_label'] . ts('Suffix'),
+        'options' => CRM_Contact_BAO_Contact::buildOptions('suffix_id'),
+        'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+        'is_fields' => TRUE,
+        'is_filters' => TRUE,
+      ),
       $options['prefix'] . 'gender_id' => array(
         'name' => 'gender_id',
         'title' => $options['prefix_label'] . ts('Gender'),
@@ -5464,6 +5489,16 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
         'title' => ts($options['prefix_label'] . 'Street Number'),
         'type' => 1,
         'is_fields' => TRUE,
+      ),
+      $options['prefix'] . 'odd_street_number' => array(
+        'title' => ts('Odd / Even Street Number'),
+        'name' => 'odd_street_number',
+        'type' => CRM_Utils_Type::T_INT,
+        'no_display' => TRUE,
+        'required' => TRUE,
+        'dbAlias' => '(address_civireport.street_number % 2)',
+        'is_fields' => TRUE,
+        'is_order_bys' => TRUE,
       ),
       $options['prefix'] . 'street_name' => array(
         'name' => 'street_name',

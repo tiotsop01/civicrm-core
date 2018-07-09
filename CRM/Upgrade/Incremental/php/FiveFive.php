@@ -25,8 +25,8 @@
  */
 
 /**
- * Upgrade logic for FiveFour */
-class CRM_Upgrade_Incremental_php_FiveFour extends CRM_Upgrade_Incremental_Base {
+ * Upgrade logic for FiveFive */
+class CRM_Upgrade_Incremental_php_FiveFive extends CRM_Upgrade_Incremental_Base {
 
   /**
    * Compute any messages which should be displayed beforeupgrade.
@@ -55,60 +55,10 @@ class CRM_Upgrade_Incremental_php_FiveFour extends CRM_Upgrade_Incremental_Base 
    *   an intermediate version; note that setPostUpgradeMessage is called repeatedly with different $revs.
    */
   public function setPostUpgradeMessage(&$postUpgradeMessage, $rev) {
-    $postUpgradeMessage .= '<p>' . ts('A new %1 permission has been added. It is not granted by default. If your users create reports, you may wish to review your permissions.', array(1 => 'save Report Criteria')) . '</p>';
     // Example: Generate a post-upgrade message.
     // if ($rev == '5.12.34') {
     //   $postUpgradeMessage .= '<br /><br />' . ts("By default, CiviCRM now disables the ability to import directly from SQL. To use this feature, you must explicitly grant permission 'import SQL datasource'.");
     // }
-  }
-
-  /**
-   * Upgrade function.
-   *
-   * @param string $rev
-   */
-  public function upgrade_5_4_alpha1($rev) {
-    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => $rev)), 'runSql', $rev);
-    $this->addTask('Add Cancel Button Setting to the Profile', 'addColumn',
-      'civicrm_uf_group', 'add_cancel_button', "tinyint DEFAULT '1' COMMENT 'Should a Cancel button be included in this Profile form.'");
-    $this->addTask('Add location_id if missing to group_contact table (affects some older installs CRM-20711)', 'addColumn',
-      'civicrm_group_contact', 'location_id', "int(10) unsigned DEFAULT NULL COMMENT 'Optional location to associate with this membership'");
-    $this->addTask('dev/core#107 - Add Activity\'s default assignee options', 'addActivityDefaultAssigneeOptions');
-  }
-
-  /**
-   * This task adds the default assignee option values that can be selected when
-   * creating or editing a new workflow's activity.
-   *
-   * @return bool
-   */
-  public static function addActivityDefaultAssigneeOptions() {
-    // Add option group for activity default assignees:
-    CRM_Core_BAO_OptionGroup::ensureOptionGroupExists(array(
-      'name' => 'activity_default_assignee',
-      'title' => ts('Activity default assignee'),
-      'is_reserved' => 1,
-    ));
-
-    // Add option values for activity default assignees:
-    $options = array(
-      array('name' => 'NONE', 'label' => ts('None'), 'is_default' => 1),
-      array('name' => 'BY_RELATIONSHIP', 'label' => ts('By relationship to case client')),
-      array('name' => 'SPECIFIC_CONTACT', 'label' => ts('Specific contact')),
-      array('name' => 'USER_CREATING_THE_CASE', 'label' => ts('User creating the case')),
-    );
-
-    foreach ($options as $option) {
-      CRM_Core_BAO_OptionValue::ensureOptionValueExists(array(
-        'option_group_id' => 'activity_default_assignee',
-        'name' => $option['name'],
-        'label' => $option['label'],
-        'is_default' => CRM_Utils_Array::value('is_default', $option, 0),
-        'is_active' => TRUE,
-      ));
-    }
-
-    return TRUE;
   }
 
   /*
