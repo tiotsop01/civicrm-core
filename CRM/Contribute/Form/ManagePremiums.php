@@ -50,7 +50,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
     $defaults = parent::setDefaultValues();
     if ($this->_id) {
       $params = array('id' => $this->_id);
-      CRM_Contribute_BAO_ManagePremiums::retrieve($params, $tempDefaults);
+      CRM_Contribute_BAO_Product::retrieve($params, $tempDefaults);
       $imageUrl = (isset($tempDefaults['image'])) ? $tempDefaults['image'] : "";
       if (isset($tempDefaults['image']) && isset($tempDefaults['thumbnail'])) {
         $defaults['imageUrl'] = $tempDefaults['image'];
@@ -272,7 +272,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
 
     // If deleting, then only delete and skip the rest of the post-processing
     if ($this->_action & CRM_Core_Action::DELETE) {
-      CRM_Contribute_BAO_ManagePremiums::del($this->_id);
+      CRM_Contribute_BAO_Product::del($this->_id);
       CRM_Core_Session::setStatus(
         ts('Selected Premium Product type has been deleted.'),
         ts('Deleted'), 'info');
@@ -287,15 +287,14 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
       $params[$field] = CRM_Utils_Rule::cleanMoney($params[$field]);
     }
 
-    $ids = array();
     if ($this->_action & CRM_Core_Action::UPDATE) {
-      $ids['premium'] = $this->_id;
+      $params['id'] = $this->_id;
     }
 
     $this->_processImages($params);
 
     // Save to database
-    $premium = CRM_Contribute_BAO_ManagePremiums::add($params, $ids);
+    $premium = CRM_Contribute_BAO_Product::create($params);
 
     CRM_Core_Session::setStatus(
       ts("The Premium '%1' has been saved.", array(1 => $premium->name)),
